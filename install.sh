@@ -472,112 +472,112 @@ rosrun ${platform}_bringup install
 echo -e "\e[32mDone: Configuring ${platform}\e[0m"
 echo ""
 
-echo -e "\e[94mConfiguring Bluetooth\e[0m"
-sudo apt install -qq -y bluez bluez-tools python-ds4drv
-sudo rfkill unblock all
-sudo rfkill unblock bluetooth
-if [ "$PLATFORM_CHOICE" == "$PLATFORM_RASPI" ];
-then
-  # Additional Raspberry Pi 4 config steps -- see RP-2396
-  sudo sed -i "s/enable_uart=1/#enable_uart=1/g" /boot/firmware/config.txt
-  sudo sed -i "s/cmdline=nobtcmd.txt/#cmdline=nobtcmd.txt/g" /boot/firmware/config.txt
-  echo "dtparam=krnbt=on" | sudo tee -a /boot/firmware/config/txt
+#echo -e "\e[94mConfiguring Bluetooth\e[0m"
+#sudo apt install -qq -y bluez bluez-tools python-ds4drv
+#sudo rfkill unblock all
+#sudo rfkill unblock bluetooth
+#if [ "$PLATFORM_CHOICE" == "$PLATFORM_RASPI" ];
+#then
+# # Additional Raspberry Pi 4 config steps -- see RP-2396
+#  sudo sed -i "s/enable_uart=1/#enable_uart=1/g" /boot/firmware/config.txt
+#  sudo sed -i "s/cmdline=nobtcmd.txt/#cmdline=nobtcmd.txt/g" /boot/firmware/config.txt
+#  echo "dtparam=krnbt=on" | sudo tee -a /boot/firmware/config/txt
 
-  sudo sed -i "s/include nobtcfg.txt/#include nobtcfg.txt/g" /boot/firmware/sysconfig.txt
-  echo "include btcfg.txt" | sudo tee -a /boot/firmware/sysconfig/txt
+#  sudo sed -i "s/include nobtcfg.txt/#include nobtcfg.txt/g" /boot/firmware/sysconfig.txt
+#  echo "include btcfg.txt" | sudo tee -a /boot/firmware/sysconfig/txt
 
-  sudo snap install pi-bluetooth
-fi
-echo -e "\e[32mDone: Configuring Bluetooth\e[0m"
-echo ""
+#  sudo snap install pi-bluetooth
+#fi
+#echo -e "\e[32mDone: Configuring Bluetooth\e[0m"
+#echo ""
 
-echo -e "\e[94mConfiguring Networking\e[0m"
-sudo usermod -a -G netdev $USER
-sudo apt install -qq -y wicd-curses bridge-utils dhcpcd5
-sudo apt remove -qq -y network-manager
-sudo mv /etc/network/interfaces /etc/network/interfaces.bkup.$(date +"%Y%m%d%H%M%S")
-sudo tee /etc/network/interfaces > /dev/null <<EOT
-auto lo br0 br0:0
-iface lo inet loopback
+# echo -e "\e[94mConfiguring Networking\e[0m"
+# sudo usermod -a -G netdev $USER
+# sudo apt install -qq -y wicd-curses bridge-utils dhcpcd5
+# sudo apt remove -qq -y network-manager
+# sudo mv /etc/network/interfaces /etc/network/interfaces.bkup.$(date +"%Y%m%d%H%M%S")
+# sudo tee /etc/network/interfaces > /dev/null <<EOT
+# auto lo br0 br0:0
+# iface lo inet loopback
 
-# Bridge together physical ports on machine, assign standard Clearpath Robot IP.
-iface br0 inet static
-  bridge_ports regex (eth.*)|(en.*)
-  address 169.253.7.10
-  gateway 169.253.7.2
-  netmask 255.255.255.0
-  bridge_maxwait 0
+# # Bridge together physical ports on machine, assign standard Clearpath Robot IP.
+# iface br0 inet static
+#   bridge_ports regex (eth.*)|(en.*)
+#   address 169.253.7.10
+#   gateway 169.253.7.2
+#   netmask 255.255.255.0
+#   bridge_maxwait 0
 
-# Also seek out DHCP IP on those ports, for the sake of easily getting online,
-# maintenance, ethernet radio support, etc.
-# For Raspberry Pi 4, you may need to disable allow-hotplug br0:0
-#allow-hotplug br0:0
-iface br0:0 inet dhcp
-EOT
+# # Also seek out DHCP IP on those ports, for the sake of easily getting online,
+# # maintenance, ethernet radio support, etc.
+# # For Raspberry Pi 4, you may need to disable allow-hotplug br0:0
+# #allow-hotplug br0:0
+# iface br0:0 inet dhcp
+# EOT
 
-# apply the fix to prevent the networking from hanging for 5 minutes on boot
-if [ "$ubuntu_version" == "bionic" ];
-then
-  if [ ! -d /etc/systemd/system/networking.service.d ];
-  then
-    sudo mkdir -p /etc/systemd/system/networking.service.d/
-  fi
-  sudo bash -c 'echo -e "[Service]\nTimeoutStartSec=5sec" > /etc/systemd/system/networking.service.d/timeout.conf'
+# # apply the fix to prevent the networking from hanging for 5 minutes on boot
+# if [ "$ubuntu_version" == "bionic" ];
+# then
+#   if [ ! -d /etc/systemd/system/networking.service.d ];
+#   then
+#     sudo mkdir -p /etc/systemd/system/networking.service.d/
+#   fi
+#   sudo bash -c 'echo -e "[Service]\nTimeoutStartSec=5sec" > /etc/systemd/system/networking.service.d/timeout.conf'
 
-  sudo systemctl mask systemd-networkd-wait-online.service
-  sudo systemctl daemon-reload
-fi
+#   sudo systemctl mask systemd-networkd-wait-online.service
+#   sudo systemctl daemon-reload
+# fi
 
-# We're using wicd, not network-manager so disable the interfaces accordingly
-sudo tee --append /etc/NetworkManager/NetworkManager.conf <<EOT
-[keyfile]
-unmanaged-devices=interface-name:br*;interface-name:eth*;interface-name:wlan*;interface-name:wlp*
-EOT
+# # We're using wicd, not network-manager so disable the interfaces accordingly
+# sudo tee --append /etc/NetworkManager/NetworkManager.conf <<EOT
+# [keyfile]
+# unmanaged-devices=interface-name:br*;interface-name:eth*;interface-name:wlan*;interface-name:wlp*
+# EOT
 
-# Disable wifi power management to improve network performance & reduce latency
-if [ "$PLATFORM_CHOICE" == "$PLATFORM_TX2" ];
-then
-  sudo tee --append /etc/rc.local <<EOT
-# disable power management on a Jetson TX2
-if ! iw dev wlan0 set power_save off;
-then
-  echo "[WARN][rc.local] Failed to disable wireless power management"
-fi
-EOT
+# # Disable wifi power management to improve network performance & reduce latency
+# if [ "$PLATFORM_CHOICE" == "$PLATFORM_TX2" ];
+# then
+#   sudo tee --append /etc/rc.local <<EOT
+# # disable power management on a Jetson TX2
+# if ! iw dev wlan0 set power_save off;
+# then
+#   echo "[WARN][rc.local] Failed to disable wireless power management"
+# fi
+# EOT
 
-elif [ "$PLATFORM_CHOICE" == "$PLATFORM_AGX_XAVIER" ];
-then
-  sudo tee --append /etc/rc.local <<EOT
-# disable wireless power management on a regular computer
-if ! iwconfig wlan0 power off;
-then
-  echo "[WARN][rc.local] Failed to disable wireless power management"
-fi
-EOT
+# elif [ "$PLATFORM_CHOICE" == "$PLATFORM_AGX_XAVIER" ];
+# then
+#   sudo tee --append /etc/rc.local <<EOT
+# # disable wireless power management on a regular computer
+# if ! iwconfig wlan0 power off;
+# then
+#   echo "[WARN][rc.local] Failed to disable wireless power management"
+# fi
+# EOT
 
-elif [ "$PLATFORM_CHOICE" == "$PLATFORM_XAVIER_NX" ] || [ "$PLATFORM_CHOICE" == "$PLATFORM_NANO" ];
-then
-  sudo tee --append /etc/rc.local <<EOT
-# disable wireless power management on a regular computer
-if ! iwconfig wlp2s0 power off;
-then
-  echo "[WARN][rc.local] Failed to disable wireless power management"
-fi
-EOT
+# elif [ "$PLATFORM_CHOICE" == "$PLATFORM_XAVIER_NX" ] || [ "$PLATFORM_CHOICE" == "$PLATFORM_NANO" ];
+# then
+#   sudo tee --append /etc/rc.local <<EOT
+# # disable wireless power management on a regular computer
+# if ! iwconfig wlp2s0 power off;
+# then
+#   echo "[WARN][rc.local] Failed to disable wireless power management"
+# fi
+# EOT
 
-elif [ "$PLATFORM_CHOICE" == "$PLATFORM_RASPI" ];
-then
-  # Any additional Pi configuration needed goes here
-  # For now there's nothing, but this section is still somewhat WIP while we evaluate the Pi on our various platforms
-  echo -n
-elif [ "$PLATFORM_CHOICE" == "$PLATFORM_DESKTOP" ];
-then
-  # Any additional Intel/AMD configuration needed goes here
-  # For now there's nothing, but we may need to add changes for specific hardware revisions in the future
-  echo -n
-fi
-echo -e "\e[32mDone: Configuring Networking\e[0m"
-echo ""
+# elif [ "$PLATFORM_CHOICE" == "$PLATFORM_RASPI" ];
+# then
+#   # Any additional Pi configuration needed goes here
+#   # For now there's nothing, but this section is still somewhat WIP while we evaluate the Pi on our various platforms
+#   echo -n
+# elif [ "$PLATFORM_CHOICE" == "$PLATFORM_DESKTOP" ];
+# then
+#   # Any additional Intel/AMD configuration needed goes here
+#   # For now there's nothing, but we may need to add changes for specific hardware revisions in the future
+#   echo -n
+# fi
+# echo -e "\e[32mDone: Configuring Networking\e[0m"
+# echo ""
 
 echo -e "\e[94mRemoving unused packages\e[0m"
 sudo apt-get -qq -y autoremove
@@ -585,30 +585,30 @@ echo -e "\e[32mDone: Removing unused packages\e[0m"
 echo ""
 
 
-STORAGE_DRIVE="/dev/nvme0n1"
-if [ -e $STORAGE_DRIVE ]; then
-  echo -e "\e[94mm2 drive detected\e[0m"
-  prompt_yesNO drive_prompt "\e[94mAutomount m2 storage to /mnt/storage\e[0m"
-  echo $drive_prompt
-  if [[ $drive_prompt == "y" ]]; then
+# STORAGE_DRIVE="/dev/nvme0n1"
+# if [ -e $STORAGE_DRIVE ]; then
+#   echo -e "\e[94mm2 drive detected\e[0m"
+#   prompt_yesNO drive_prompt "\e[94mAutomount m2 storage to /mnt/storage\e[0m"
+#   echo $drive_prompt
+#   if [[ $drive_prompt == "y" ]]; then
 
-    # check if the storage drive has already been manually configured before formatting & configuring fstab
-    if grep -qs '$STORAGE_DRIVE ' /proc/mounts; then
-        echo -e "[33mWarn: $STORAGE_DRIVE is already mounted. Skipping.\e[0m"
-    else
-      sudo apt install -qq -y dosfstools
-      sudo mkfs.ext4 $STORAGE_DRIVE
-      sudo mkdir -p /mnt/storage
-      echo "$STORAGE_DRIVE /mnt/storage ext4 auto,user,rw 1 2" | sudo tee -a /etc/fstab
-      sudo mount /mnt/storage/
-      sudo chmod -R a+rwx /mnt/storage/
-      echo -e "\e[32mDone: Automount m2 storage\e[0m"
-    fi
-  else
-    echo -e "\e[33mWarn: No selected for automouting drive, skipping\e[0m"
-  fi
-  echo ""
-fi
+#     # check if the storage drive has already been manually configured before formatting & configuring fstab
+#     if grep -qs '$STORAGE_DRIVE ' /proc/mounts; then
+#         echo -e "[33mWarn: $STORAGE_DRIVE is already mounted. Skipping.\e[0m"
+#     else
+#       sudo apt install -qq -y dosfstools
+#       sudo mkfs.ext4 $STORAGE_DRIVE
+#       sudo mkdir -p /mnt/storage
+#       echo "$STORAGE_DRIVE /mnt/storage ext4 auto,user,rw 1 2" | sudo tee -a /etc/fstab
+#       sudo mount /mnt/storage/
+#       sudo chmod -R a+rwx /mnt/storage/
+#       echo -e "\e[32mDone: Automount m2 storage\e[0m"
+#     fi
+#   else
+#     echo -e "\e[33mWarn: No selected for automouting drive, skipping\e[0m"
+#   fi
+#   echo ""
+# fi
 
 echo -e "\e[94mVerifying install\e[0m"
 if [ "$ros_version" == `rosversion -d` ]; then
