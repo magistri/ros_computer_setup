@@ -344,7 +344,7 @@ echo -e "\e[32mDone: Updating packages\e[0m"
 echo ""
 
 echo -e "\e[94mInstalling ROS prerequisites\e[0m"
-sudo apt install -qq -y python-rosdep python-rosinstall python-rosinstall-generator python-wstool build-essential
+sudo apt install -qq -y python3-rosdep python3-rosinstall python3-rosinstall-generator python3-wstool build-essential
 # ensure the correct tool for setting user permissions for the upstart job are present
 if [ "$ubuntu_version" == "bionic" ];
 then
@@ -503,14 +503,15 @@ iface lo inet loopback
 # Bridge together physical ports on machine, assign standard Clearpath Robot IP.
 iface br0 inet static
   bridge_ports regex (eth.*)|(en.*)
-  address 192.168.131.1
+  address 169.253.7.10
+  gateway 169.253.7.2
   netmask 255.255.255.0
   bridge_maxwait 0
 
 # Also seek out DHCP IP on those ports, for the sake of easily getting online,
 # maintenance, ethernet radio support, etc.
 # For Raspberry Pi 4, you may need to disable allow-hotplug br0:0
-allow-hotplug br0:0
+#allow-hotplug br0:0
 iface br0:0 inet dhcp
 EOT
 
